@@ -1,0 +1,80 @@
+var a = "global";
+
+print a; // expect: global
+
+{
+    var a = "local";
+
+    print a; // expect: local
+}
+
+print !!!true; // expect: false
+
+// comment // inner comment 
+
+print "hello world";
+
+class Parent {
+    testMethodOne() {
+        print "one";
+    }
+}
+
+class Child < Parent {
+    testMethodTwo() {
+        print "two";
+    }
+}
+
+var test = Parent();
+
+var test2 = Child();
+
+test.testMethodOne(); // "one"
+test2.testMethodOne(); // "one"
+test2.testMethodTwo(); // "two"
+// test.testMethodTwo(); undefined
+
+fun printSmth(times) {
+
+    if(times < 0) {
+        print "Number too small";
+        return;
+    }
+
+    while(times >= 0) {
+        print times;
+        times = times - 1;
+    }
+
+    print "";
+}
+
+printSmth(10);
+printSmth(0);
+printSmth(-1);
+
+print 
+"
+multi 
+line
+statement?
+";
+
+print test2;
+print test;
+
+test2 = printSmth(10);
+print test2;
+
+test2 = printSmth;
+print test2;
+test2(10);
+
+fun returnSmth(){
+    return 1+2;
+}
+
+test2 = returnSmth();
+
+print test2;
