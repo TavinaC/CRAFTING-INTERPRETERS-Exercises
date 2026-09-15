@@ -40,6 +40,12 @@ class AstPrinter implements Expr.Visitor<String> {
     return builder.toString();
   }
 
+
+  @Override 
+  public String visitConditionalExpr(Expr.Conditional expr) {
+    return parenthesize("conditional", expr.conditional, expr.if_true, expr.if_false);
+  }
+
 // Testing. Expected Output:  (* (- 123) (group 45.67))
   public static void main(String[] args) {
     Expr expression = new Expr.Binary(

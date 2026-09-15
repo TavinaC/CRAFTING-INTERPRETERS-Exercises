@@ -32,6 +32,11 @@ class RPNPrinter implements Expr.Visitor<String> {
     return expr.right.accept(this) + " " + operator;
   }
 
+  @Override 
+  public String visitConditionalExpr(Expr.Conditional expr) {
+    return "(" + expr.conditional.accept(this) + " " + expr.if_true.accept(this) + " " + expr.if_false.accept(this) + ") ?:";
+  }
+
 // Testing. 
 // Input: (1 + 2) * (4 - 3)
 // Expected Output:  1 2 + 4 3 - * 

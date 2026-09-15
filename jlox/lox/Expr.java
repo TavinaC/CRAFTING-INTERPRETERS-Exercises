@@ -1,11 +1,14 @@
 package jlox.lox;
 
-public abstract class Expr {
-  public interface Visitor<R> {
+import java.util.List;
+
+abstract class Expr {
+  interface Visitor<R> {
     R visitBinaryExpr(Binary expr);
     R visitGroupingExpr(Grouping expr);
     R visitLiteralExpr(Literal expr);
     R visitUnaryExpr(Unary expr);
+    R visitConditionalExpr(Conditional expr);
   }
   static class Binary extends Expr {
     Binary(Expr left, Token operator, Expr right) {
@@ -60,6 +63,22 @@ public abstract class Expr {
 
     final Token operator;
     final Expr right;
+  }
+  static class Conditional extends Expr {
+    Conditional(Expr conditional, Expr if_true, Expr if_false) {
+      this.conditional = conditional;
+      this.if_true = if_true;
+      this.if_false = if_false;
+    }
+
+    @Override
+    <R> R accept(Visitor<R> visitor) {
+      return visitor.visitConditionalExpr(this);
+    }
+
+    final Expr conditional;
+    final Expr if_true;
+    final Expr if_false;
   }
 
   abstract <R> R accept(Visitor<R> visitor);
