@@ -50,12 +50,16 @@ public class Lox {
     List<Token> tokens = scanner.scanTokens();
 
     Parser parser = new Parser(tokens);
-    Expr expression = parser.parse();
+    Object syntax = parser.parse();
 
     // Stop if there was a syntax error.
     if (hadError) return;
 
-    interpreter.interpret(expression);
+    if (syntax instanceof Expr expr) {
+      interpreter.interpret(expr);
+    } else if (syntax instanceof List){
+      interpreter.interpret((List<Stmt>)syntax);
+    }
   }
 
   static void error(int line, String message) {
