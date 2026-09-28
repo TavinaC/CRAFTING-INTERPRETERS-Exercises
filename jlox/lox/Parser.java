@@ -62,7 +62,7 @@ class Parser {
     if (match(RETURN)) return returnStatement();
     if (match(WHILE)) return whileStatement();
     if (match(LEFT_BRACE)) return new Stmt.Block(block());
-    if (match(BREAK)) return breakStatement();
+    // if (match(BREAK)) return breakStatement();
 
     return expressionStatement();
   }
@@ -174,13 +174,13 @@ class Parser {
     }
   }
 
-  private Stmt breakStatement() {
-    if (loopDepth == 0) {
-      error(previous(), "Expect 'break' to be inside a loop.");
-    }
-    consume(SEMICOLON, "Expect ';' after 'break'.");
-    return new Stmt.Break();
-  }
+  // private Stmt breakStatement() {
+  //   if (loopDepth == 0) {
+  //     error(previous(), "Expect 'break' to be inside a loop.");
+  //   }
+  //   consume(SEMICOLON, "Expect ';' after 'break'.");
+  //   return new Stmt.Break();
+  // }
 
   private Stmt expressionStatement() {
     Expr expr = expression();
@@ -268,31 +268,31 @@ class Parser {
     return expr;
   }
 
-  private Expr comma() {
-    Expr expr = conditional();
+  // private Expr comma() {
+  //   Expr expr = conditional();
 
-    while(match(COMMA)){
-      Token operator = previous();
-      Expr right = conditional();
-      expr = new Expr.Binary(expr, operator, right);
-    }
+  //   while(match(COMMA)){
+  //     Token operator = previous();
+  //     Expr right = conditional();
+  //     expr = new Expr.Binary(expr, operator, right);
+  //   }
 
-    return expr;
-  }
+  //   return expr;
+  // }
 
-  private Expr conditional() {
-    Expr expr = equality();
+  // private Expr conditional() {
+  //   Expr expr = equality();
 
-    if (match(QUESTION)) {
-      Expr if_true = expression();
-      consume(COLON,
-          "Expect ':' after `if_true` expression");
-      Expr if_false = conditional();
-      expr = new Expr.Conditional(expr, if_true, if_false);
-    }
+  //   if (match(QUESTION)) {
+  //     Expr if_true = expression();
+  //     consume(COLON,
+  //         "Expect ':' after `if_true` expression");
+  //     Expr if_false = conditional();
+  //     expr = new Expr.Conditional(expr, if_true, if_false);
+  //   }
 
-    return expr;
-  }
+  //   return expr;
+  // }
 
   private Expr equality() {
     Expr expr = comparison();
@@ -402,11 +402,11 @@ class Parser {
       return new Expr.Grouping(expr);
     }
 
-    if(match(COMMA)) {
-      error(previous(), "Missing left-hand operand.");
-      comma();
-      return null;
-    }
+    // if(match(COMMA)) {
+    //   error(previous(), "Missing left-hand operand.");
+    //   comma();
+    //   return null;
+    // }
 
     if (match(BANG_EQUAL, EQUAL_EQUAL)) {
       error(previous(), "Missing left-hand operand.");

@@ -11,7 +11,6 @@ abstract class Expr {
     R visitLiteralExpr(Literal expr);
     R visitLogicalExpr(Logical expr);
     R visitUnaryExpr(Unary expr);
-    R visitConditionalExpr(Conditional expr);
     R visitVariableExpr(Variable expr);
   }
   static class Assign extends Expr {
@@ -113,22 +112,6 @@ abstract class Expr {
 
     final Token operator;
     final Expr right;
-  }
-  static class Conditional extends Expr {
-    Conditional(Expr conditional, Expr if_true, Expr if_false) {
-      this.conditional = conditional;
-      this.if_true = if_true;
-      this.if_false = if_false;
-    }
-
-    @Override
-    <R> R accept(Visitor<R> visitor) {
-      return visitor.visitConditionalExpr(this);
-    }
-
-    final Expr conditional;
-    final Expr if_true;
-    final Expr if_false;
   }
   static class Variable extends Expr {
     Variable(Token name) {
