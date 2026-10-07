@@ -98,7 +98,7 @@ class Parser {
     if (match(RETURN)) return returnStatement();
     if (match(WHILE)) return whileStatement();
     if (match(LEFT_BRACE)) return new Stmt.Block(block());
-    // if (match(BREAK)) return breakStatement();
+    if (match(CONTINUE)) return continueStatement();
 
     return expressionStatement();
   }
@@ -210,13 +210,13 @@ class Parser {
     }
   }
 
-  // private Stmt breakStatement() {
-  //   if (loopDepth == 0) {
-  //     error(previous(), "Expect 'break' to be inside a loop.");
-  //   }
-  //   consume(SEMICOLON, "Expect ';' after 'break'.");
-  //   return new Stmt.Break();
-  // }
+  private Stmt continueStatement() {
+    if (loopDepth == 0) {
+      error(previous(), "Expect 'continue' to be inside a loop.");
+    }
+    consume(SEMICOLON, "Expect ';' after 'continue'.");
+    return new Stmt.Continue();
+  }
 
   private Stmt expressionStatement() {
     Expr expr = expression();

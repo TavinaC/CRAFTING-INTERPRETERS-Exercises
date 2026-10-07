@@ -88,6 +88,11 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     return null;
   }
 
+  @Override 
+  public Void visitContinueStmt(Stmt.Continue stmt) {
+    return null;
+  }
+
   @Override
   public Void visitExtendStmt(Stmt.Extend stmt) {
     beginScope();

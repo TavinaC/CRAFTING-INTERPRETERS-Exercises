@@ -5,6 +5,7 @@ import java.util.List;
 abstract class Stmt {
   interface Visitor<R> {
     R visitBlockStmt(Block stmt);
+    R visitContinueStmt(Continue stmt);
     R visitClassStmt(Class stmt);
     R visitExpressionStmt(Expression stmt);
     R visitExtendStmt(Extend stmt);
@@ -26,6 +27,16 @@ abstract class Stmt {
     }
 
     final List<Stmt> statements;
+  }
+  static class Continue extends Stmt {
+    Continue() {
+    }
+
+    @Override
+    <R> R accept(Visitor<R> visitor) {
+      return visitor.visitContinueStmt(this);
+    }
+
   }
   static class Class extends Stmt {
     Class(Token name, Expr.Variable superclass, List<Stmt.Function> methods) {
