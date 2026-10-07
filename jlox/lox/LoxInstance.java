@@ -15,9 +15,8 @@ class LoxInstance {
     if (fields.containsKey(name.lexeme)) {
       return fields.get(name.lexeme);
     }
-
-    LoxFunction method = klass.findMethod(name.lexeme);
-    if (method != null) return method.bind(this);
+    LoxFunction method = klass.findMethod(this, name.lexeme);
+    if (method != null) return method.bind(this, method);
     
     throw new RuntimeError(name, 
         "Undefined property '" + name.lexeme + "'.");
