@@ -88,6 +88,20 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
   }
 
   @Override
+  public Void visitExtendStmt(Stmt.Extend stmt) {
+    beginScope();
+    scopes.peek().put("this", true);
+
+    for (Stmt.Function method : stmt.methods) {
+      FunctionType declaration = FunctionType.METHOD;
+      resolveFunction(method, declaration); 
+    }
+
+    endScope();
+    return null;
+  }
+
+  @Override
   public Void visitExpressionStmt(Stmt.Expression stmt) {
     resolve(stmt.expression);
     return null;

@@ -26,6 +26,10 @@ class LoxClass implements LoxCallable {
     return null;
   }
 
+  void addMethod(String name, LoxFunction method) {
+    methods.put(name, method);
+  }
+
   @Override
   public String toString() {
     return name;

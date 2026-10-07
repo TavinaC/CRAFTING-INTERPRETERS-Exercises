@@ -176,6 +176,19 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void>{
   }
 
   @Override
+  public Void visitExtendStmt(Stmt.Extend stmt) {
+    Token name = stmt.name;
+    LoxClass klass = (LoxClass)environment.get(name);
+
+    for (Stmt.Function method : stmt.methods) {
+      LoxFunction function = new LoxFunction(method, environment, false);
+      klass.addMethod(method.name.lexeme, function);
+    }
+
+    return null;
+  }
+
+  @Override
   public Void visitExpressionStmt(Stmt.Expression stmt) {
     evaluate(stmt.expression);
     return null;
