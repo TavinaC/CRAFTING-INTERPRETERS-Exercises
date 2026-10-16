@@ -1,7 +1,7 @@
 CC = gcc
 CFLAGS = -std=c99
 TARGET = clox
-SRCS = main.c chunk.c debug.c memory.c value.c vm.c compiler.c scanner.c
+SRCS = main.c chunk.c debug.c memory.c value.c vm.c compiler.c scanner.c object.c
 OBJS = $(SRCS:.c=.o)
 
 all: $(TARGET)
