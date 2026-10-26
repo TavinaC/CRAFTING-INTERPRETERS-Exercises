@@ -60,11 +60,12 @@ static void concatenate() {
   ObjString* a = AS_STRING(pop());
 
   int length = a->length + b->length;
-  ObjString* result = makeString(length);
-  memcpy(result->chars, a->chars, a->length);
-  memcpy(result->chars + a->length, b->chars, b->length);
-  result->chars[length] = '\0';
-  
+  char* chars = ALLOCATE(char, length + 1);
+  memcpy(chars, a->chars, a->length);
+  memcpy(chars + a->length, b->chars, b->length);
+  chars[length] = '\0';
+
+  ObjString* result = makeString(true, chars, length); 
   push(OBJ_VAL(result));
 }
 
@@ -114,7 +115,7 @@ static InterpretResult run() {
       case OP_LESS:     BINARY_OP(BOOL_VAL, <); break;
       case OP_ADD: {
         if (IS_STRING(peek(0)) && IS_STRING(peek(1))) {
-          concatenate();
+          tenate();
         } else if (IS_NUMBER(peek(0)) && IS_NUMBER(peek(1))) {
           double b = AS_NUMBER(pop());
           double a = AS_NUMBER(pop());
