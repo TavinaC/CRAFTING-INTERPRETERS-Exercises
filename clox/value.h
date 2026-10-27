@@ -10,7 +10,8 @@ typedef enum {
   VAL_BOOL,
   VAL_NIL, 
   VAL_NUMBER,
-  VAL_OBJ
+  VAL_OBJ,
+  VAL_UNDEFINED
 } ValueType;
 
 typedef struct {
@@ -35,6 +36,7 @@ typedef struct {
 #define NIL_VAL           ((Value){VAL_NIL, {.number = 0}})
 #define NUMBER_VAL(value) ((Value){VAL_NUMBER, {.number = value}})
 #define OBJ_VAL(object)   ((Value){VAL_OBJ, {.obj = (Obj*)object}})
+#define UNDEFINED_VAL           ((Value){VAL_NIL, {.number = 0}})
 
 typedef struct {
   int capacity;
