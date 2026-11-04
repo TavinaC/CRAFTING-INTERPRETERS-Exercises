@@ -44,6 +44,7 @@ typedef struct {
 typedef struct {
   Token name;
   int depth;
+  bool isConst;
 } Local;
 
 typedef struct {
@@ -235,6 +236,10 @@ static void namedVariable(Token name, bool canAssign) {
   }
   
   if (canAssign && match(TOKEN_EQUAL)) {
+    if (arg != -1 && current->locals[arg].isConst) {
+      error("Can't reassign a constant.");
+    }
+
     expression();
     emitBytes(setOp, (uint8_t)arg);
   } else {
@@ -335,7 +340,7 @@ static bool identifiersEqual(Token* a, Token* b) {
   return memcmp(a->start, b->start, a->length) == 0;
 }
 
-static void addLocal(Token name) {
+static void addLocal(Token name, bool isConst) {
   if (current->localCount == UINT8_COUNT) {
     error("Too many local variables in function.");
     return;
@@ -345,6 +350,7 @@ static void addLocal(Token name) {
   local->name = name;
   local->depth = -1;
   local->depth = current->scopeDepth;
+  local->isConst = isConst;
 }
 
 static int resolveLocal(Compiler* compiler, Token* name) {
@@ -361,7 +367,7 @@ static int resolveLocal(Compiler* compiler, Token* name) {
   return -1;
 }
 
-static void declareVariable() {
+static void declareVariable(bool isConst) {
   if (current->scopeDepth == 0) return;
 
   Token* name = &parser.previous;
@@ -376,13 +382,13 @@ static void declareVariable() {
     }
   }
 
-  addLocal(*name);
+  addLocal(*name, isConst);
 }
 
-static uint8_t parseVariable(const char* errorMessage) {
+static uint8_t parseVariable(const char* errorMessage, bool isConst) {
   consume(TOKEN_IDENTIFIER, errorMessage);
 
-  declareVariable();
+  declareVariable(isConst);
   if (current->scopeDepth > 0) return 0;
 
   return identifierConstant(&parser.previous);
@@ -419,7 +425,7 @@ static void block() {
 }
 
 static void varDeclaration() {
-  uint8_t global = parseVariable("Expect variable name.");
+  uint8_t global = parseVariable("Expect variable name.", false);
 
   if (match(TOKEN_EQUAL)) {
     expression();
@@ -428,6 +434,20 @@ static void varDeclaration() {
   }
   consume(TOKEN_SEMICOLON,
           "Expect ';' after variable declaration.");
+
+  defineVariable(global);
+}
+
+static void constDeclaration() {
+  uint8_t global = parseVariable("Expect constant name.", true);
+
+  if (match(TOKEN_EQUAL)) {
+    expression();
+  } else {
+    emitByte(OP_NIL);
+  }
+  consume(TOKEN_SEMICOLON,
+          "Expect ';' after constant declaration.");
 
   defineVariable(global);
 }
@@ -451,6 +471,7 @@ static void synchronize() {
     if (parser.previous.type == TOKEN_SEMICOLON) return;
     switch (parser.current.type) {
       case TOKEN_CLASS:
+      case TOKEN_CONST:
       case TOKEN_FUN:
       case TOKEN_VAR:
       case TOKEN_FOR:
@@ -471,6 +492,8 @@ static void synchronize() {
 static void declaration() {
   if (match(TOKEN_VAR)) {
     varDeclaration();
+  } else if (match(TOKEN_CONST)){
+    constDeclaration();
   } else {
     statement();
   }
