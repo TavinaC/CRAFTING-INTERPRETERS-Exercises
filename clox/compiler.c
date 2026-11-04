@@ -56,6 +56,9 @@ Parser parser;
 Compiler* current = NULL;
 Chunk* compilingChunk;
 
+int innermostLoopStart = -1;
+int innermostLoopScopeDepth = 0;
+
 static Chunk* currentChunk() {
   return compilingChunk;
 }
@@ -498,7 +501,11 @@ static void forStatement() {
     expressionStatement();
   }
 
-  int loopStart = currentChunk()->count;
+  int surroundingLoopStart = innermostLoopStart;
+  int surroundingLoopScopeDepth = innermostLoopScopeDepth;
+  innermostLoopStart = currentChunk()->count; 
+  innermostLoopScopeDepth = current->scopeDepth; 
+
   int exitJump = -1;
   if (!match(TOKEN_SEMICOLON)) {
     expression();
@@ -516,18 +523,22 @@ static void forStatement() {
     emitByte(OP_POP);
     consume(TOKEN_RIGHT_PAREN, "Expect ')' after for clauses.");
 
-    emitLoop(loopStart);
-    loopStart = incrementStart;
+    emitLoop(innermostLoopStart); // <--
+    innermostLoopStart = incrementStart; // <--
+    patchJump(bodyJump);
     patchJump(bodyJump);
   }
 
   statement();
-  emitLoop(loopStart);
+  emitLoop(innermostLoopStart);
 
   if (exitJump != -1) {
     patchJump(exitJump);
     emitByte(OP_POP); // Condition.
   }
+
+  innermostLoopStart = surroundingLoopStart;
+  innermostLoopScopeDepth = surroundingLoopScopeDepth;
 
   endScope();
 }
@@ -632,6 +643,22 @@ static void switchStatement() {
   emitByte(OP_POP);
 }
 
+static void continueStatement() {
+  if (innermostLoopStart == -1) {
+    error("Can't use 'continue' outside of a loop.");
+  }
+
+  consume(TOKEN_SEMICOLON, "Expect ';' after 'continue'.");
+
+  for (int i = current->localCount - 1;
+       i >= 0 && current->locals[i].depth > innermostLoopScopeDepth;
+       i--) {
+    emitByte(OP_POP);
+  }
+
+  emitLoop(innermostLoopStart);
+}
+
 static void synchronize() {
   parser.panicMode = false;
 
@@ -681,6 +708,8 @@ static void statement() {
     endScope();
   } else if (match(TOKEN_SWITCH)) {
     switchStatement();
+  } else if (match(TOKEN_CONTINUE)) {
+    continueStatement();
   } else {
     expressionStatement();
   }
