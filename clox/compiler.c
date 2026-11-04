@@ -48,7 +48,7 @@ typedef struct {
 } Local;
 
 typedef struct {
-  Local locals[UINT8_COUNT];
+  Local locals[UINT16_COUNT];
   int localCount;
   int scopeDepth;
 } Compiler;
@@ -227,8 +227,13 @@ static void namedVariable(Token name, bool canAssign) {
   uint8_t getOp, setOp;
   int arg = resolveLocal(current, &name);
   if (arg != -1) {
-    getOp = OP_GET_LOCAL;
-    setOp = OP_SET_LOCAL;
+    if (arg <= UINT8_MAX) {
+      getOp = OP_GET_LOCAL;
+      setOp = OP_SET_LOCAL;
+    } else {
+      getOp = OP_GET_LOCAL_LONG;
+      setOp = OP_SET_LOCAL_LONG;
+    }
   } else {
     arg = identifierConstant(&name);
     getOp = OP_GET_GLOBAL;
@@ -241,9 +246,22 @@ static void namedVariable(Token name, bool canAssign) {
     }
 
     expression();
-    emitBytes(setOp, (uint8_t)arg);
+    
+    if (arg != -1 && arg > UINT8_MAX) {
+      emitByte(setOp);
+      emitByte((uint8_t)(arg >> 8));
+      emitByte((uint8_t)(arg & 0xff));
+    } else {
+      emitBytes(setOp, (uint8_t)arg);
+    }
   } else {
-    emitBytes(getOp, (uint8_t)arg);
+    if (arg != -1 && arg > UINT8_MAX) {
+      emitByte(getOp);
+      emitByte((uint8_t)(arg >> 8));
+      emitByte((uint8_t)(arg & 0xff));
+    } else {
+      emitBytes(getOp, (uint8_t)arg);
+    }
   }
 }
 
@@ -341,7 +359,7 @@ static bool identifiersEqual(Token* a, Token* b) {
 }
 
 static void addLocal(Token name, bool isConst) {
-  if (current->localCount == UINT8_COUNT) {
+  if (current->localCount == UINT16_COUNT) {
     error("Too many local variables in function.");
     return;
   }

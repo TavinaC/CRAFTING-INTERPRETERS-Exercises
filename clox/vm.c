@@ -117,8 +117,18 @@ static InterpretResult run() {
         push(vm.stack[slot]); 
         break;
       }
+      case OP_GET_LOCAL_LONG: {
+        uint16_t slot = (READ_BYTE() << 8) | READ_BYTE();
+        push(vm.stack[slot]);
+        break;
+      }
       case OP_SET_LOCAL: {
         uint8_t slot = READ_BYTE();
+        vm.stack[slot] = peek(0);
+        break;
+      }
+      case OP_SET_LOCAL_LONG: {
+        uint16_t slot = (READ_BYTE() << 8) | READ_BYTE();
         vm.stack[slot] = peek(0);
         break;
       }
