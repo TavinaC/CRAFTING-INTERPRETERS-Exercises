@@ -74,6 +74,7 @@ typedef struct Compiler {
 typedef struct ClassCompiler {
   struct ClassCompiler* enclosing;
   bool hasSuperclass;
+  Token className;
 } ClassCompiler;
 
 Parser parser;
@@ -292,7 +293,18 @@ static void call(bool canAssign) {
 
 static void dot(bool canAssign) {
   consume(TOKEN_IDENTIFIER, "Expect property name after '.'.");
-  uint8_t name = identifierConstant(&parser.previous);
+  Token nameToken = parser.previous;
+
+  if (currentClass != NULL) {
+    nameToken.length = currentClass->className.length + 1 + nameToken.length;
+    nameToken.start = ALLOCATE(char, nameToken.length + 1);
+
+    memcpy(nameToken.start, currentClass->className.start, currentClass->className.length);
+    memcpy(nameToken.start + currentClass->className.length, '.', 1);
+    memcpy(nameToken.start + currentClass->className.length + 1, nameToken.start, nameToken.length);
+    memcpy(nameToken.start + nameToken.length, '\0', 2);
+  }
+  uint8_t name = identifierConstant(&nameToken);
 
   if (canAssign && match(TOKEN_EQUAL)) {
     expression();
@@ -693,6 +705,7 @@ static void classDeclaration() {
   ClassCompiler classCompiler;
   classCompiler.hasSuperclass = false;
   classCompiler.enclosing = currentClass;
+  classCompiler.className = className;
   currentClass = &classCompiler;
 
   if (match(TOKEN_LESS)) {
