@@ -141,12 +141,11 @@ static void concatenate() {
 
 static InterpretResult run() {
 CallFrame* frame = &vm.frames[vm.frameCount - 1];
+register uint8_t* ip = frame->ip;
 
-#define READ_BYTE() (*frame->ip++)
-
+#define READ_BYTE() (*ip++)
 #define READ_SHORT() \
-    (frame->ip += 2, \
-    (uint16_t)((frame->ip[-2] << 8) | frame->ip[-1]))
+    (ip += 2, (uint16_t)((ip[-2] << 8) | ip[-1]))
 
 #define READ_CONSTANT() \
     (frame->function->chunk.constants.values[READ_BYTE()])
@@ -154,6 +153,7 @@ CallFrame* frame = &vm.frames[vm.frameCount - 1];
 #define BINARY_OP(valueType, op) \
     do { \
       if (!IS_NUMBER(peek(0)) || !IS_NUMBER(peek(1))) { \
+        frame->ip = ip; \
         runtimeError("Operands must be numbers."); \
         return INTERPRET_RUNTIME_ERROR; \
       } \
@@ -199,6 +199,7 @@ CallFrame* frame = &vm.frames[vm.frameCount - 1];
         ObjString* name = READ_STRING();
         Value value;
         if (!tableGet(&vm.globals, name, &value)) {
+          frame->ip = ip;
           runtimeError("Undefined variable '%s'.", name->chars);
           return INTERPRET_RUNTIME_ERROR;
         }
@@ -215,6 +216,7 @@ CallFrame* frame = &vm.frames[vm.frameCount - 1];
         ObjString* name = READ_STRING();
         if (tableSet(&vm.globals, name, peek(0))) {
           tableDelete(&vm.globals, name); 
+          frame->ip = ip;
           runtimeError("Undefined variable '%s'.", name->chars);
           return INTERPRET_RUNTIME_ERROR;
         }
@@ -236,6 +238,7 @@ CallFrame* frame = &vm.frames[vm.frameCount - 1];
           double a = AS_NUMBER(pop());
           push(NUMBER_VAL(a + b));
         } else {
+          frame->ip = ip;
           runtimeError(
               "Operands must be two numbers or two strings.");
           return INTERPRET_RUNTIME_ERROR;
@@ -250,6 +253,7 @@ CallFrame* frame = &vm.frames[vm.frameCount - 1];
         break;
       case OP_NEGATE:
         if (!IS_NUMBER(peek(0))) {
+          frame->ip = ip;
           runtimeError("Operand must be a number.");
           return INTERPRET_RUNTIME_ERROR;
         }
@@ -262,25 +266,27 @@ CallFrame* frame = &vm.frames[vm.frameCount - 1];
       }
       case OP_JUMP: {
         uint16_t offset = READ_SHORT();
-        frame->ip += offset;
+        ip += offset;
         break;
       }
       case OP_JUMP_IF_FALSE: {
         uint16_t offset = READ_SHORT();
-        if (isFalsey(peek(0))) frame->ip += offset;
+        if (isFalsey(peek(0))) ip += offset;
         break;
       }
       case OP_LOOP: {
         uint16_t offset = READ_SHORT();
-        frame->ip -= offset;
+        ip -= offset;
         break;
       }
       case OP_CALL: {
         int argCount = READ_BYTE();
+        frame->ip = ip;
         if (!callValue(peek(argCount), argCount)) {
           return INTERPRET_RUNTIME_ERROR;
         }
         frame = &vm.frames[vm.frameCount - 1];
+        ip = frame->ip;
         break;
       }
       case OP_RETURN: {
@@ -294,6 +300,7 @@ CallFrame* frame = &vm.frames[vm.frameCount - 1];
         vm.stackTop = frame->slots;
         push(result);
         frame = &vm.frames[vm.frameCount - 1];
+        ip = frame->ip;
         break;
       }
     }
