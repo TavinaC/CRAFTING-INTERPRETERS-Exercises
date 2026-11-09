@@ -22,6 +22,48 @@ static bool errNative(int argCount, Value* args) {
   return false;
 }
 
+static bool sqrtNative(int argCount, Value* args) {
+  if (!IS_NUMBER(args[0])) {
+    args[-1] = OBJ_VAL(copyString("Expect number.", 13));
+    return false;
+  }
+  
+  double value = AS_NUMBER(args[0]);
+  
+  if (value < 0) {
+    args[-1] = OBJ_VAL(copyString("Cannot take square root of a negative number", 44));
+    return false;
+  }
+
+  args[-1] = NUMBER_VAL(sqrt(value));
+
+  return true;
+}
+
+static bool typeNative(int argCount, Value* args) {
+  Value val = args[0];
+  const char* typeName = "object";
+
+  if (IS_NIL(val)) {
+    typeName = "nil";
+  } else if (IS_BOOL(val)) {
+    typeName = "bool";
+  } else if (IS_NUMBER(val)) {
+    typeName = "number";
+  } else if (IS_OBJ(val)) {
+    switch (OBJ_TYPE(val)) {
+      case OBJ_STRING:   typeName = "string";   break;
+      case OBJ_FUNCTION: 
+      case OBJ_NATIVE:   typeName = "function"; break;
+      default:           typeName = "object";   break;
+    }
+  }
+
+  args[-1] = OBJ_VAL(copyString(typeName, (int)strlen(typeName)));
+
+  return true;
+}
+
 static void resetStack() {
   vm.stackTop = vm.stack;
   vm.frameCount = 0;
@@ -66,6 +108,8 @@ void initVM() {
   initTable(&vm.strings);
 
   defineNative("clock", clockNative, 0);
+  defineNative("sqrt", sqrtNative, 1);
+  defineNative("type", typeNative, 1);
 }
 
 void freeVM() {
