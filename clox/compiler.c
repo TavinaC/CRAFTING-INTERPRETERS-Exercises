@@ -73,8 +73,10 @@ typedef struct Compiler {
 
 typedef struct ClassCompiler {
   struct ClassCompiler* enclosing;
+  uint16_t id;
   bool hasSuperclass;
   Token className;
+  Token methodName;
 } ClassCompiler;
 
 Parser parser;
@@ -383,27 +385,26 @@ static Token syntheticToken(const char* text) {
   return token;
 }
 
-static void super_(bool canAssign) {
+static void inner(bool canAssign) {
   if (currentClass == NULL) {
-    error("Can't use 'super' outside of a class.");
-  } else if (!currentClass->hasSuperclass) {
-    error("Can't use 'super' in a class with no superclass.");
+    error("Can't use 'inner' outside of a class.");
   }
-  
-  consume(TOKEN_DOT, "Expect '.' after 'super'.");
-  consume(TOKEN_IDENTIFIER, "Expect superclass method name.");
-  uint8_t name = identifierConstant(&parser.previous);
 
   namedVariable(syntheticToken("this"), false);
-  if (match(TOKEN_LEFT_PAREN)) {
-    uint8_t argCount = argumentList();
-    namedVariable(syntheticToken("super"), false);
-    emitBytes(OP_SUPER_INVOKE, name);
-    emitByte(argCount);
-  } else {
-    namedVariable(syntheticToken("super"), false);
-    emitBytes(OP_GET_SUPER, name);
+  consume(TOKEN_LEFT_PAREN, "Expect argument list after 'inner'.");
+  uint8_t argCount = argumentList();
+  uint8_t constant = 0;
+  if (currentClass != NULL) {
+    char name[256];
+    sprintf(name, "%.*s@%x",
+        currentClass->methodName.length,
+        currentClass->methodName.start,
+        currentClass->id);
+    constant = makeConstant(OBJ_VAL(copyString(name, (int)strlen(name))));
   }
+
+  emitBytes(OP_INNER, constant);
+  emitByte(argCount);
 }
 
 static void this_(bool canAssign) {
@@ -463,7 +464,7 @@ ParseRule rules[] = {
   [TOKEN_OR]            = {NULL,     or_,    PREC_OR},
   [TOKEN_PRINT]         = {NULL,     NULL,   PREC_NONE},
   [TOKEN_RETURN]        = {NULL,     NULL,   PREC_NONE},
-  [TOKEN_SUPER]         = {super_,   NULL,   PREC_NONE},
+  [TOKEN_INNER]         = {inner,    NULL,   PREC_NONE},
   [TOKEN_THIS]          = {this_,    NULL,   PREC_NONE},
   [TOKEN_TRUE]          = {literal,  NULL,   PREC_NONE},
   [TOKEN_VAR]           = {NULL,     NULL,   PREC_NONE},
@@ -681,6 +682,7 @@ static void function(FunctionType type) {
 
 static void method() {
   consume(TOKEN_IDENTIFIER, "Expect method name.");
+  currentClass->methodName = parser.previous;
   uint8_t constant = identifierConstant(&parser.previous);
 
   FunctionType type = TYPE_METHOD;
@@ -700,12 +702,16 @@ static void classDeclaration() {
   declareVariable();
 
   emitBytes(OP_CLASS, nameConstant);
+  uint16_t id = vm.nextClassID++;
+  emitByte((id >> 8) & 0xff);
+  emitByte(id & 0xff);
   defineVariable(nameConstant);
 
   ClassCompiler classCompiler;
   classCompiler.hasSuperclass = false;
   classCompiler.enclosing = currentClass;
   classCompiler.className = className;
+  classCompiler.id = id;
   currentClass = &classCompiler;
 
   if (match(TOKEN_LESS)) {
@@ -721,10 +727,6 @@ static void classDeclaration() {
     classCompiler.hasSuperclass = true;
   }
 
-  beginScope();
-  addLocal(syntheticToken("super"));
-  defineVariable(0);
-
   namedVariable(className, false);
   consume(TOKEN_LEFT_BRACE, "Expect '{' before class body.");
   while (!check(TOKEN_RIGHT_BRACE) && !check(TOKEN_EOF)) {
@@ -732,10 +734,6 @@ static void classDeclaration() {
   }
   consume(TOKEN_RIGHT_BRACE, "Expect '}' after class body.");
   emitByte(OP_POP);
-
-  if (classCompiler.hasSuperclass) {
-    endScope();
-  }
 
   currentClass = currentClass->enclosing;
 }
