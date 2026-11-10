@@ -76,7 +76,7 @@ ObjNative* newNative(NativeFn function) {
   return native;
 }
 
-static ObjString* allocateString(char* chars, int length, uint32_t hash) {
+static ObjString* allocateStringObj(char* chars, int length, uint32_t hash) {
   ObjString* string = ALLOCATE_OBJ(ObjString, OBJ_STRING);
   string->length = length;
   string->chars = chars;
@@ -87,6 +87,13 @@ static ObjString* allocateString(char* chars, int length, uint32_t hash) {
   pop();
 
   return string;
+}
+
+Value allocateString(char* chars, int length, uint32_t hash) {
+  if (length <= 7) {
+    return makeSmallStringValue(chars, length);
+  }
+  return allocateStringObj(chars, length, hash);
 }
 
 static uint32_t hashString(const char* key, int length) {

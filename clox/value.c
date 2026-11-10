@@ -47,6 +47,7 @@ void printValue(Value value) {
     case VAL_NIL: printf("nil"); break;
     case VAL_NUMBER: printf("%g", AS_NUMBER(value)); break;
     case VAL_OBJ: printObject(value); break;
+    case VAL_SMALL_STRING: printf("%.*s", value.as.smallStr.length, value.as.smallStr.chars); break;
   }
 #endif
 }
@@ -58,12 +59,25 @@ bool valuesEqual(Value a, Value b) {
   }
   return a == b;
 #else
-  if (a.type != b.type) return false;
+  if (a.type != b.type) {
+    if (IS_SMALL_STRING(a) && IS_OBJ_TYPE(b, OBJ_STRING)) {
+      ObjString* bStr = AS_STRING(b);
+      return a.as.smallStr.length == bStr->length &&
+             memcmp(a.as.smallStr.chars, bStr->chars, bStr->length) == 0;
+    }
+    if (IS_OBJ_TYPE(a, OBJ_STRING) && IS_SMALL_STRING(b)) {
+      ObjString* aStr = AS_STRING(a);
+      return aStr->length == b.as.smallStr.length &&
+             memcmp(aStr->chars, b.as.smallStr.chars, aStr->length) == 0;
+    }
+    return false;
+  }
   switch (a.type) {
     case VAL_BOOL:   return AS_BOOL(a) == AS_BOOL(b);
     case VAL_NIL:    return true;
     case VAL_NUMBER: return AS_NUMBER(a) == AS_NUMBER(b);
     case VAL_OBJ:    return AS_OBJ(a) == AS_OBJ(b);
+    case VAL_SMALL_STRING: return AS_SMALL_STRING(a) == AS_SMALL_STRING(b);
     default:         return false; // Unreachable.
   }
 #endif

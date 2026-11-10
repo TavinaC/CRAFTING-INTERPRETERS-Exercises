@@ -56,7 +56,8 @@ typedef enum {
   VAL_BOOL,
   VAL_NIL, 
   VAL_NUMBER,
-  VAL_OBJ
+  VAL_OBJ,
+  VAL_SMALL_STRING
 } ValueType;
 
 typedef struct {
@@ -65,6 +66,10 @@ typedef struct {
     bool boolean;
     double number;
     Obj* obj;
+    struct {
+      uint8_t length;
+      char chars[7];
+    } smallStr;
   } as; 
 } Value;
 
@@ -72,15 +77,26 @@ typedef struct {
 #define IS_NIL(value)     ((value).type == VAL_NIL)
 #define IS_NUMBER(value)  ((value).type == VAL_NUMBER)
 #define IS_OBJ(value)     ((value).type == VAL_OBJ)
+#define IS_SMALL_STRING(value)    ((value).type == VAL_SMALL_STRING)
 
 #define AS_OBJ(value)     ((value).as.obj)
 #define AS_BOOL(value)    ((value).as.boolean)
 #define AS_NUMBER(value)  ((value).as.number)
+#define AS_SMALL_STRING(value)    ((value).as.smallStr)
 
 #define BOOL_VAL(value)   ((Value){VAL_BOOL, {.boolean = value}})
 #define NIL_VAL           ((Value){VAL_NIL, {.number = 0}})
 #define NUMBER_VAL(value) ((Value){VAL_NUMBER, {.number = value}})
 #define OBJ_VAL(object)   ((Value){VAL_OBJ, {.obj = (Obj*)object}})
+
+static inline Value makeSmallStringValue(const char* chars, int length) {
+  Value val;
+  val.type = VAL_SMALL_STRING;
+  val.as.smallStr.length = (uint8_t)length;
+  memset(val.as.smallStr.chars, 0, 7);
+  memcpy(val.as.smallStr.chars, chars, length);
+  return val;
+}
 
 #endif
 
